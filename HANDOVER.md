@@ -791,6 +791,112 @@ For issues or questions:
 
 ---
 
-**Last Updated:** November 2024
+## Files Created and Modified
+
+This section lists all files that were created or modified to implement the dust promo products system.
+
+### Created Files
+
+#### Module Files
+- `src/modules/dust/index.ts` - Dust module definition and export
+- `src/modules/dust/service.ts` - Dust module service with business logic
+- `src/modules/dust/models/dust-balance.ts` - Customer dust balance model
+- `src/modules/dust/models/dust-transaction.ts` - Dust transaction history model
+- `src/modules/dust/models/dust-product.ts` - Product dust settings model
+- `src/modules/dust/migrations/Migration20251119231148.ts` - Database migration for dust tables
+- `src/modules/dust/README.md` - Module documentation
+
+#### Workflow Files
+- `src/workflows/credit-dust.ts` - Workflow to credit dust to customers
+- `src/workflows/debit-dust.ts` - Workflow to debit dust from customers
+- `src/workflows/apply-dust-to-cart.ts` - Workflow to apply dust points to cart
+
+#### API Route Files - Admin
+- `src/api/admin/dust/credit/route.ts` - Admin endpoint to credit dust
+- `src/api/admin/dust/debit/route.ts` - Admin endpoint to debit dust
+- `src/api/admin/dust/balance/[customer_id]/route.ts` - Admin endpoint to get customer balance
+- `src/api/admin/products/[id]/dust/route.ts` - Admin endpoint to get/set product dust settings
+
+#### API Route Files - Store
+- `src/api/store/dust/balance/route.ts` - Store endpoint to get customer's own balance
+- `src/api/store/dust/transactions/route.ts` - Store endpoint to get transaction history
+- `src/api/store/dust/apply-to-cart/route.ts` - Store endpoint to apply dust to cart
+- `src/api/store/dust/products/route.ts` - Store endpoint to get dust settings for products
+- `src/api/store/products/[id]/dust/route.ts` - Store endpoint to get product dust settings
+- `src/api/store/products/dust/route.ts` - Store endpoint to get multiple products' dust settings
+- `src/api/store/products/[id]/route.ts` - Extended product endpoint with dust settings
+- `src/api/store/products-with-metadata/route.ts` - Modified to include dust settings
+
+#### Subscriber Files
+- `src/subscribers/order-placed-dust.ts` - Subscriber to deduct dust when order is placed
+
+#### Admin Widget Files
+- `src/admin/widgets/dust-product-widget.tsx` - Admin widget for managing product dust settings
+
+### Modified Files
+
+#### Configuration Files
+- `medusa-config.ts` - Added dust module to modules array
+
+#### Documentation Files
+- `HANDOVER.md` - This handover documentation (created)
+- `README.md` - Updated with project information (if modified)
+
+### File Structure Summary
+
+```
+src/
+├── modules/
+│   └── dust/                    # Custom dust module
+│       ├── index.ts
+│       ├── service.ts
+│       ├── models/
+│       │   ├── dust-balance.ts
+│       │   ├── dust-transaction.ts
+│       │   └── dust-product.ts
+│       ├── migrations/
+│       │   └── Migration20251119231148.ts
+│       └── README.md
+├── workflows/
+│   ├── credit-dust.ts
+│   ├── debit-dust.ts
+│   └── apply-dust-to-cart.ts
+├── api/
+│   ├── admin/
+│   │   ├── dust/
+│   │   │   ├── credit/route.ts
+│   │   │   ├── debit/route.ts
+│   │   │   └── balance/[customer_id]/route.ts
+│   │   └── products/[id]/dust/route.ts
+│   └── store/
+│       ├── dust/
+│       │   ├── balance/route.ts
+│       │   ├── transactions/route.ts
+│       │   ├── apply-to-cart/route.ts
+│       │   └── products/route.ts
+│       └── products/
+│           ├── [id]/route.ts          # Extended endpoint
+│           ├── [id]/dust/route.ts
+│           ├── dust/route.ts
+│           └── products-with-metadata/route.ts  # Modified
+├── subscribers/
+│   └── order-placed-dust.ts
+└── admin/
+    └── widgets/
+        └── dust-product-widget.tsx
+
+medusa-config.ts                    # Modified
+```
+
+### Database Tables Created
+
+The migrations create the following tables:
+- `dust_balance` - Stores customer dust balances
+- `dust_transaction` - Stores dust transaction history
+- `dust_product` - Stores product dust settings (links products to dust configuration)
+
+---
+
+**Last Updated:** November 2025
 **Version:** 1.0.0
 

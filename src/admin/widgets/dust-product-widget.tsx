@@ -1,19 +1,12 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
 import { Container, Heading, Button, Input, Label } from "@medusajs/ui"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 /**
  * Widget to easily mark products as dust-only and set dust price
  * This widget appears on the product details page
  */
 const DustProductWidget = () => {
-  // Get product ID from window location
-  const getProductId = () => {
-    const path = window.location.pathname
-    const match = path.match(/\/products\/([^\/]+)/)
-    return match ? match[1] : null
-  }
-  
   const [productId, setProductId] = useState<string | null>(null)
   
   const [isDustOnly, setIsDustOnly] = useState(false)
@@ -22,16 +15,7 @@ const DustProductWidget = () => {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error", text: string } | null>(null)
 
-  // Get product ID and load settings when component mounts
-  useEffect(() => {
-    const id = getProductId()
-    setProductId(id)
-    if (id) {
-      loadDustSettings(id)
-    }
-  }, [])
-
-  const loadDustSettings = async (id: string) => {
+  const loadDustSettings = useCallback(async (id: string) => {
     setLoading(true)
     try {
       const response = await fetch(`/admin/products/${id}/dust`, {
@@ -48,7 +32,23 @@ const DustProductWidget = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  // Get product ID and load settings when component mounts
+  useEffect(() => {
+    // Get product ID from window location
+    const getProductId = () => {
+      const path = window.location.pathname
+      const match = path.match(/\/products\/([^\/]+)/)
+      return match ? match[1] : null
+    }
+    
+    const id = getProductId()
+    setProductId(id)
+    if (id) {
+      loadDustSettings(id)
+    }
+  }, [loadDustSettings])
 
   const handleSave = async () => {
     if (!productId) return

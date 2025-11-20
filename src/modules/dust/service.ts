@@ -127,13 +127,27 @@ class DustModuleService extends MedusaService({
     })
     const existing = results?.[0]
 
+    // If disabling dust-only, delete the record
+    if (!dustOnly) {
+      if (existing) {
+        await this.deleteDustProducts(existing.id)
+        return null
+      }
+      return null
+    }
+
+    // If enabling dust-only, require dust_price
+    if (!dustPrice || dustPrice <= 0) {
+      throw new Error("dust_price is required and must be positive when dust_only is true")
+    }
+
     if (existing) {
       // Update existing
       const [updated] = await this.updateDustProducts({
         selector: { id: existing.id },
         data: {
           dust_only: dustOnly,
-          dust_price: dustPrice ?? undefined,
+          dust_price: dustPrice,
         },
       })
       return updated || existing
@@ -142,7 +156,7 @@ class DustModuleService extends MedusaService({
       return await this.createDustProducts({
         product_id: productId,
         dust_only: dustOnly,
-        dust_price: dustPrice ?? undefined,
+        dust_price: dustPrice,
       })
     }
   }

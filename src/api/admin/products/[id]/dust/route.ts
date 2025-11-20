@@ -45,16 +45,23 @@ export async function POST(
   }
 
   const dustService = req.scope.resolve(DUST_MODULE)
-  const result = await dustService.setProductDustSettings(
-    id,
-    dust_only,
-    dust_price || undefined
-  )
+  
+  try {
+    const result = await dustService.setProductDustSettings(
+      id,
+      dust_only,
+      dust_price || undefined
+    )
 
-  res.json({
-    success: true,
-    dust_only: result.dust_only,
-    dust_price: result.dust_price,
-  })
+    res.json({
+      success: true,
+      dust_only: result?.dust_only || false,
+      dust_price: result?.dust_price || null,
+    })
+  } catch (error: any) {
+    res.status(400).json({
+      message: error.message || "Failed to save dust settings",
+    })
+  }
 }
 
