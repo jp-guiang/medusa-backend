@@ -325,7 +325,7 @@ The widget is located at `src/admin/widgets/dust-product-widget.tsx` and follows
 ```typescript
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
 import { Container, Heading, Button, Input, Label } from "@medusajs/ui"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 const DustProductWidget = () => {
   // Widget implementation
@@ -348,10 +348,11 @@ The widget uses `defineWidgetConfig` to specify where it appears:
 #### 3. Widget Functionality
 
 The widget implements:
-- **State Management**: Uses React hooks (`useState`, `useEffect`) to manage form state
-- **Product ID Detection**: Extracts product ID from the current URL path
+- **State Management**: Uses React hooks (`useState`, `useEffect`, `useCallback`) to manage form state
+- **Product ID Detection**: Extracts product ID from the current URL path using regex on `window.location.pathname`
 - **API Integration**: Calls `/admin/products/:id/dust` endpoints to load and save settings
 - **UI Components**: Uses Medusa UI components (`Container`, `Heading`, `Button`, `Input`, `Label`)
+- **Error Handling**: Displays success/error messages when saving settings
 
 #### 4. API Integration
 
@@ -370,7 +371,7 @@ await fetch(`/admin/products/${productId}/dust`, {
   credentials: "include",
   body: JSON.stringify({
     dust_only: isDustOnly,
-    dust_price: parseInt(dustPrice),
+    dust_price: isDustOnly ? parseInt(dustPrice) : undefined,
   }),
 })
 ```
@@ -455,12 +456,13 @@ GET /store/products/:product_id/dust
 
 ### How It Works
 
-1. **Product Setup**: Admin marks product as dust-only with a dust price
-2. **Customer Balance**: Customer receives dust points (via admin credit, purchase, promotion, etc.)
-3. **Storefront Display**: Storefront checks if product is dust-only and displays dust price
-4. **Checkout**: Customer applies dust points during checkout
-5. **Order Placement**: When order is placed, dust is automatically deducted from customer balance
-6. **Transaction Log**: All dust transactions are logged for audit purposes
+1. **Product Setup**: Admin marks product as dust-only with a dust price via API or widget
+2. **Record Management**: When dust-only is enabled, a record is created in `dust_product` table. When disabled, the record is deleted.
+3. **Customer Balance**: Customer receives dust points (via admin credit, purchase, promotion, etc.)
+4. **Storefront Display**: Storefront checks if product is dust-only and displays dust price
+5. **Checkout**: Customer applies dust points during checkout
+6. **Order Placement**: When order is placed, dust is automatically deducted from customer balance via subscriber
+7. **Transaction Log**: All dust transactions are logged for audit purposes
 
 ---
 
@@ -647,6 +649,8 @@ Authorization: Bearer YOUR_ADMIN_TOKEN
 }
 ```
 
+**Note:** When `dust_only` is set to `false`, the dust product record is deleted from the database (since it's no longer needed). The API will return `dust_only: false` and `dust_price: null`.
+
 #### Get Product Dust Settings
 ```http
 GET /admin/products/:id/dust
@@ -661,10 +665,36 @@ GET /store/dust/balance
 Credentials: include
 ```
 
+**Response:**
+```json
+{
+  "balance": 500,
+  "customer_id": "cus_123"
+}
+```
+
 #### Get My Transaction History
 ```http
 GET /store/dust/transactions?take=50&skip=0
 Credentials: include
+```
+
+**Response:**
+```json
+{
+  "transactions": [
+    {
+      "id": "txn_123",
+      "customer_id": "cus_123",
+      "amount": 100,
+      "type": "credit",
+      "reference_type": "admin_adjustment",
+      "reference_id": null,
+      "description": "Welcome bonus",
+      "created_at": "2024-11-19T12:00:00Z"
+    }
+  ]
+}
 ```
 
 #### Get Product Dust Settings
@@ -677,6 +707,24 @@ GET /store/products/:id/dust
 GET /store/products/dust?ids=prod_1,prod_2,prod_3
 ```
 
+**Response:**
+```json
+{
+  "products": {
+    "prod_1": {
+      "dust_only": true,
+      "dust_price": 100
+    },
+    "prod_2": {
+      "dust_only": false,
+      "dust_price": null
+    }
+  }
+}
+```
+
+**Note:** Products without dust settings will not appear in the response. Use the extended product endpoint for complete product data with dust settings.
+
 #### Apply Dust to Cart
 ```http
 POST /store/dust/apply-to-cart
@@ -686,6 +734,22 @@ Credentials: include
 {
   "cart_id": "cart_123",
   "dust_amount": 100
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "payment_session": { ... },
+  "available_balance": 500
+}
+```
+
+**Error Response (Insufficient Balance):**
+```json
+{
+  "message": "Insufficient dust balance. Available: 50, Required: 100"
 }
 ```
 
@@ -749,6 +813,13 @@ Returns product with `dust` object:
 1. Verify migrations ran: `npx medusa db:migrate`
 2. Check `dust_product` table exists: `psql medusa_db -c "\d dust_product"`
 3. Verify API endpoint is working: `curl http://localhost:9000/admin/products/:id/dust`
+4. When disabling dust-only, ensure you're sending `dust_only: false` (the record will be deleted)
+
+### Error: "You must pass a non-undefined value to the property dust_price"
+
+**Issue:** Error occurs when trying to disable dust-only on a product
+
+**Solution:** This was fixed in the service layer. When `dust_only` is `false`, the record is now deleted instead of updated. Ensure you're using the latest version of `src/modules/dust/service.ts`.
 
 ### Storefront Can't Access Dust Settings
 
